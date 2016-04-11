@@ -1,6 +1,4 @@
-# CS349 Assignment3 - Makefile
-# Author:- Rohit Rangan
-# Author:- Siddharth Ancha
+# Makefile
 #
 # Makefile for the C++ code.
 
