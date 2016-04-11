@@ -2,7 +2,9 @@
 #include "../include/message.h"
 // #include <iostream>
 // #include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <map>
 #include <set>
 
@@ -19,6 +21,7 @@ enum state
 
 int main()
 {
+    srand (time (NULL));
 	Socket site;
 	site.bind(6666);
 	map<int,state> txState;
@@ -43,6 +46,55 @@ int main()
 				Socket temp;
 				for(int)
 				temp.connect('localhost',)
+            case START_VOTE:
+                Socket tmp;
+                int will_abort = rand () % 10;
+                if (will_abort < 3)
+                {
+                    Message vote_abort (VOTE_ABORT, msg.transaction_id);
+                    string snd_msg = vote_abort.createMessage ();
+                    // Change to coordinator's port
+                    tmp.connect ("localhost", 6666);
+                    tmp.send (snd_msg);
+                    // Change state to ABORT and remove from set.
+                }
+                else
+                {
+                    Message vote_commit (VOTE_COMMIT, msg.transaction_id);
+                    string snd_msg = vote_commit.createMessage ();
+                    // Change to coordinator's port
+                    tmp.connect ("localhost", 6666);
+                    tmp.send (snd_msg);
+                    // Change state to READY.
+                }
+                break;
+            case PRE_COMMIT:
+                Socket tmp;
+                Message ack (ACK, msg.transaction_id);
+                string snd_msg = ack.createMessage ();
+                // Change to coordinator's port
+                tmp.connect ("localhost", 6666);
+                tmp.send (snd_msg);
+                // Change state to PRE_COMMIT
+                break;
+            case COMMIT:
+                Socket tmp;
+                Message ack (ACK, msg.transaction_id);
+                string snd_msg = ack.createMessage ();
+                // Change to coordinator's port
+                tmp.connect ("localhost", 6666);
+                tmp.send (snd_msg);
+                // Change state to COMMIT and remove from set.
+                break;
+            case ABORT:
+                Socket tmp;
+                Message ack (ACK, msg.transaction_id);
+                string snd_msg = ack.createMessage ();
+                // Change to coordinator's port
+                tmp.connect ("localhost", 6666);
+                tmp.send (snd_msg);
+                // Change state to ABORT and remove from set.
+                break;
 		}
 
 
