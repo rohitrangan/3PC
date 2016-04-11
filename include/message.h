@@ -9,7 +9,12 @@
 #ifndef PC_MESSAGE_H_
 #define PC_MESSAGE_H_
 
+#include <vector>
 #include <string>
+#include <sstream>
+
+#define DELIM   ','
+#define NUM_MESSAGES    9
 
 enum message_id
 {
@@ -20,25 +25,37 @@ enum message_id
     PRE_COMMIT,
     COMMIT,
     ABORT,
-    ACK
+    ACK,
+    ERROR
 };
 
+extern std::string message_strings[NUM_MESSAGES];
+
+/* Function to split strings. */
+void split (const std::string&, char, std::vector<std::string>&);
+
+/* Creates a message object. This can be used to send as well as create new
+ * messages. Parsing messages is done automatically. All you need to do is
+ * check the message field and the transaction field in order to obtain the
+ * message.
+ */
 class Message
 {
   public:
     message_id message;
     int transaction_id;
-    string message_str;
+    std::string message_str;
 
     /* Use this constructor to create a new message. */
     Message (message_id, int);
     /* Use this constructor to parse a message. */
-    Message (string);
+    Message (std::string);
     /* Returns a message which you can send. */
-    string createMessage ();
+    std::string createMessage ();
 
   private:
     void parseMessage ();
+    message_id messageIndex (std::string);
 };
 
 #endif  /* 3PC_MESSAGE_H_ */
