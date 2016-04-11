@@ -3,8 +3,8 @@
  * Contains the wrapper functions for a TCP socket.
  */
 
-#ifndef 3PC_SOCKET_H_
-#define 3PC_SOCKET_H_
+#ifndef PC_SOCKET_H_
+#define PC_SOCKET_H_
 
 #include <cerrno>
 #include <string>
