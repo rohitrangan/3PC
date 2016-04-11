@@ -4,8 +4,8 @@
 
 CXX=c++
 CXXFLAGS= -Wall -Wextra
-CXXSRCS1=src/client.cpp src/socket.cpp
-CXXSRCS2=src/server.cpp src/socket.cpp
+CXXSRCS1=src/transactionGenerator.cpp src/socket.cpp src/message.cpp
+CXXSRCS2=src/server.cpp src/socket.cpp src/message.cpp
 CXXOBJS1=$(CXXSRCS1:.cpp=.o)
 CXXOBJS2=$(CXXSRCS2:.cpp=.o)
 LIBS=
