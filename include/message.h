@@ -28,7 +28,7 @@ class Message
   public:
     message_id message;
     int transaction_id;
-    string 
+    string message_str;
 
     /* Use this constructor to create a new message. */
     Message (message_id, int);

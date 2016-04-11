@@ -8,6 +8,12 @@ Message::Message (message_id m_id, int t_id) : message (m_id),
 {
 }
 
-Message::Message (string m_str)
+Message::Message (string m_str) : message_str (m_str)
 {
+    parseMessage ();
+}
+
+string Message::createMessage ()
+{
+
 }
