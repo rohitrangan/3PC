@@ -11,22 +11,29 @@
 using namespace std;
 enum state
 {
-    INIT,
-    READY,
-    WAIT,
-    PRE_COMMIT,
-    COMMIT,
-    ABORT    
+    S_INIT,
+    S_READY,
+    S_WAIT,
+    S_PRE_COMMIT,
+    S_COMMIT,
+    S_ABORT    
 };
 
-int main()
+struct transaction_info
 {
+    int numVotes;
+    state site_st;
+    int coordinator;
+};
+
+int main(int argc, char *argv[])
+{
+    int site_id = std::stoi (string (argv[1]));
     srand (time (NULL));
 	Socket site;
 	site.bind(6666);
-	map<int,state> txState;
 	set<int> txLive;
-	map<int,nVotes> numVotes;
+	map<int,transaction_info> trans_table;
 	site.listen(100);
 	std::vector<int> sites(3);
 	sites[0] =6666;
@@ -43,110 +50,122 @@ int main()
 		switch(msg.message)
 		{
 			case TRANSACTION:
-				txState[msg.transaction_id] = INIT;
-				numVotes[msg.transaction_id] = 1;
+                transaction_info new_t;
+                new_t.numVotes = 1;
+                new_t.site_st = S_INIT;
+                new_t.coordinator = site_id;
+				trans_table[msg.transaction_id] = new_t;
+                cout << "Site " << site_id << " accepted transaction " <<
+                    msg.transaction_id << endl;
 				Socket temp;
-				Message tempMsg(START_VOTE,msg.transaction_id);
+				Message tempMsg(START_VOTE,msg.transaction_id, site_id);
 				string tempStr = tempMsg.createMessage();
 				for(int i = 0; i < sites.size();i++)
 				{
-					temp.connect('localhost',sites[i]);
-					temp.send(str);
+                    if (i != site_id)
+                    {
+					    temp.connect("localhost", sites[i]);
+					    temp.send(str);
+                        cout << "[" << msg.transaction_id << "]Site " << site_id
+                            << " sent START_VOTE to Site " << i << endl;
+                    }
 				}
-				txState[msg.transaction_id] = WAIT;
+                trans_table[msg.transaction_id].site_st = S_WAIT;
 				txLive.insert(msg.transaction_id);
 				break;
 			case VOTE_COMMIT:
-				numVotes[msg.transaction_id] ++;
-				if(numVotes[msg.transaction_id]==sites.size())
+				trans_table[msg.transaction_id].numVotes++;
+                cout << "[" << msg.transaction_id << "]Site " << site_id
+                    << " got VOTE_COMMIT from Site " << msg.site_id << endl;
+				if(trans_table[msg.transaction_id].numVotes==sites.size())
 				{
+                    cout << "[" << msg.transaction_id << "]Site " << site_id <<
+                        " has all vote commits." << endl;
 					Socket temp;
-					Message tempMsg(PRE_COMMIT,msg.transaction_id);
+					Message tempMsg(PRE_COMMIT,msg.transaction_id, site_id);
 					string tempStr = tempMsg.createMessage();
 					for(int i = 0; i < sites.size();i++)
 					{
-						temp.connect('localhost',sites[i]);
+						temp.connect("localhost", sites[i]);
 						temp.send(str);
+                        cout << "[" << msg.transaction_id << "]Site " << site_id
+                            << " sent PRE_COMMIT to Site " << i << endl;
 					}
-					txState[msg.transaction_id] = PRE_COMMIT;
-					numVotes[msg.transaction_id] = 1;
+					trans_table[msg.transaction_id].site_st = S_PRE_COMMIT;
+					trans_table[msg.transaction_id].numVotes = 1;
 				}
 				break;
 			case VOTE_ABORT:
 				Socket temp;
-				Message tempMsg(ABORT,msg.transaction_id);
+				Message tempMsg(ABORT,msg.transaction_id, site_id);
 				string tempStr = tempMsg.createMessage();
 				for(int i = 0; i < sites.size();i++)
 				{
-					temp.connect('localhost',sites[i]);
+					temp.connect("localhost",sites[i]);
 					temp.send(str);
 				}
 				txLive.erase(msg.transaction_id);
-				txState[msg.transaction_id] = ABORT;
+				trans_table[msg.transaction_id].site_st = S_ABORT;
 				break;
 			case ACK:
-				numVotes[msg.transaction_id] ++;
-				if(numVotes[msg.transaction_id]==sites.size())
+				trans_table[msg.transaction_id].numVotes++;
+				if(trans_table[msg.transaction_id].numVotes==sites.size())
 				{
 					Socket temp;
-					Message tempMsg(COMMIT,msg.transaction_id);
+					Message tempMsg(COMMIT, msg.transaction_id, site_id);
 					string tempStr = tempMsg.createMessage();
 					for(int i = 0; i < sites.size();i++)
 					{
-						temp.connect('localhost',sites[i]);
+						temp.connect("localhost",sites[i]);
 						temp.send(str);
 					}
-					txState[msg.transaction_id] = COMMIT;
+					trans_table[msg.transaction_id].site_st = S_COMMIT;
 				}
 				break;
             case START_VOTE:
+                txLive.insert (msg.transaction_id);
+                transaction_info new_t;
+                new_t.numVotes = -1;
+                new_t.site_st = S_INIT;
+                new_t.coordinator = msg.site_id;
+				trans_table[msg.transaction_id] = new_t;
                 Socket tmp;
                 int will_abort = rand () % 10;
                 if (will_abort < 3)
                 {
-                    Message vote_abort (VOTE_ABORT, msg.transaction_id);
+                    Message vote_abort (VOTE_ABORT, msg.transaction_id,
+                                site_id);
                     string snd_msg = vote_abort.createMessage ();
-                    // Change to coordinator's port
-                    tmp.connect ("localhost", 6666);
+                    tmp.connect ("localhost", sites[msg.site_id]);
                     tmp.send (snd_msg);
-                    // Change state to ABORT and remove from set.
+                    trans_table[msg.transaction_id].site_st = S_ABORT;
+                    txLive.erase (msg.transaction_id);
                 }
                 else
                 {
-                    Message vote_commit (VOTE_COMMIT, msg.transaction_id);
+                    Message vote_commit (VOTE_COMMIT, msg.transaction_id,
+                                site_id);
                     string snd_msg = vote_commit.createMessage ();
-                    // Change to coordinator's port
-                    tmp.connect ("localhost", 6666);
+                    tmp.connect ("localhost", sites[msg.site_id]);
                     tmp.send (snd_msg);
-                    // Change state to READY.
+                    trans_table[msg.transaction_id].site_st = S_READY;
                 }
                 break;
             case PRE_COMMIT:
                 Socket tmp;
-                Message ack (ACK, msg.transaction_id);
+                Message ack (ACK, msg.transaction_id, site_id);
                 string snd_msg = ack.createMessage ();
-                // Change to coordinator's port
-                tmp.connect ("localhost", 6666);
+                tmp.connect ("localhost", sites[msg.site_id]);
                 tmp.send (snd_msg);
-                // Change state to PRE_COMMIT
+                trans_table[msg.transaction_id].site_st = S_PRE_COMMIT;
                 break;
             case COMMIT:
-                Socket tmp;
-                Message ack (ACK, msg.transaction_id);
-                string snd_msg = ack.createMessage ();
-                // Change to coordinator's port
-                tmp.connect ("localhost", 6666);
-                tmp.send (snd_msg);
-                // Change state to COMMIT and remove from set.
+                trans_table[msg.transaction_id].site_st = S_COMMIT;
+                txLive.erase (msg.transaction_id);
                 break;
             case ABORT:
-                Socket tmp;
-                Message ack (ACK, msg.transaction_id);
-                string snd_msg = ack.createMessage ();
-                // Change to coordinator's port
-                tmp.connect ("localhost", 6666);
-                tmp.send (snd_msg);
-                // Change state to ABORT and remove from set.
+                trans_table[msg.transaction_id].site_st = S_ABORT;
+                txLive.erase (msg.transaction_id);
                 break;
 
 		}

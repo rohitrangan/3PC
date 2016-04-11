@@ -26,8 +26,8 @@ void split(const std::string& line, char delim, std::vector<std::string>& val) {
     }
 }
 
-Message::Message (message_id m_id, int t_id) : message (m_id),
-            transaction_id (t_id)
+Message::Message (message_id m_id, int t_id, int s_id) : message (m_id),
+            transaction_id (t_id), site_id (s_id)
 {
 }
 
@@ -40,6 +40,7 @@ std::string Message::createMessage ()
 {
     std::stringstream s;
     s << message_strings[message] << DELIM << transaction_id;
+    s << DELIM << site_id;
     return s.str ();
 }
 
@@ -59,4 +60,5 @@ void Message::parseMessage ()
     split (message_str, DELIM, m_parsed);
     this->message = messageIndex (m_parsed[0]);
     this->transaction_id = std::stoi (m_parsed[1]);
+    this->site_id = std::stoi (m_parsed[2]);
 }

@@ -20,7 +20,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#define DELIM       "\r\n"
 #define BACKLOG     10
 #define RECV_SIZE   1000
 

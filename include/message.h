@@ -1,7 +1,7 @@
 /* message.h
  *
  * Functions to parse incoming messages and to create outgoing messages.
- * Our messages are of the form - "message_id,transaction_id,...".
+ * Our messages are of the form - "message_id,transaction_id,site_id,...".
  * The message_id field is defined as an enum below. transaction_id is an
  * integer with the ID of the transaction.
  */
@@ -44,10 +44,11 @@ class Message
   public:
     message_id message;
     int transaction_id;
+    int site_id;
     std::string message_str;
 
     /* Use this constructor to create a new message. */
-    Message (message_id, int);
+    Message (message_id, int, int);
     /* Use this constructor to parse a message. */
     Message (std::string);
     /* Returns a message which you can send. */
