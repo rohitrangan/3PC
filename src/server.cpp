@@ -26,9 +26,9 @@ int main()
 	map<int,nVotes> numVotes;
 	site.listen(100);
 	std::vector<int> sites(3);
+	sites[0] =6666;
 	sites[1] =6666;
 	sites[2] =6666;
-	sites[3] =6666;
 	cout<<"Server -1 Up"<<endl;
 	while(1)
 	{
@@ -40,9 +40,65 @@ int main()
 		switch(msg.message)
 		{
 			case TRANSACTION:
+				txState[msg.transaction_id] = INIT;
+				numVotes[msg.transaction_id] = 1;
 				Socket temp;
-				for(int)
-				temp.connect('localhost',)
+				Message tempMsg(START_VOTE,msg.transaction_id);
+				string tempStr = tempMsg.createMessage();
+				for(int i = 0; i < sites.size();i++)
+				{
+					temp.connect('localhost',sites[i]);
+					temp.send(str);
+				}
+				txState[msg.transaction_id] = WAIT;
+				txLive.insert(msg.transaction_id);
+				break;
+			case VOTE_COMMIT:
+				numVotes[msg.transaction_id] ++;
+				if(numVotes[msg.transaction_id]==sites.size())
+				{
+					Socket temp;
+					Message tempMsg(PRE_COMMIT,msg.transaction_id);
+					string tempStr = tempMsg.createMessage();
+					for(int i = 0; i < sites.size();i++)
+					{
+						temp.connect('localhost',sites[i]);
+						temp.send(str);
+					}
+					txState[msg.transaction_id] = PRE_COMMIT;
+					numVotes[msg.transaction_id] = 1;
+				}
+				break;
+			case VOTE_ABORT:
+				Socket temp;
+				Message tempMsg(ABORT,msg.transaction_id);
+				string tempStr = tempMsg.createMessage();
+				for(int i = 0; i < sites.size();i++)
+				{
+					temp.connect('localhost',sites[i]);
+					temp.send(str);
+				}
+				txLive.erase(msg.transaction_id);
+				txState[msg.transaction_id] = ABORT;
+				break;
+			case ACK:
+				numVotes[msg.transaction_id] ++;
+				if(numVotes[msg.transaction_id]==sites.size())
+				{
+					Socket temp;
+					Message tempMsg(COMMIT,msg.transaction_id);
+					string tempStr = tempMsg.createMessage();
+					for(int i = 0; i < sites.size();i++)
+					{
+						temp.connect('localhost',sites[i]);
+						temp.send(str);
+					}
+					txState[msg.transaction_id] = COMMIT;
+				}
+				break;
+
+		}
+
 		}
 
 
