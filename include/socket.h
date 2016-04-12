@@ -13,6 +13,7 @@
 #include <sstream>
 #include <iostream>
 
+#include <fcntl.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -29,6 +30,7 @@ class Socket
 {
 private:
     int socketFD;
+    bool blockingEnabled;
 
 public:
     Socket ();
@@ -47,6 +49,8 @@ public:
     string getDestAddr ();
     int getDestPort ();
     int close ();
+    int enableBlocking ();
+    int disableBlocking ();
 };
 
 #endif  /* 3PC_SOCKET_H_ */
