@@ -3,9 +3,9 @@
 # Makefile for the C++ code.
 
 CXX=c++
-CXXFLAGS= -Wall -Wextra
+CXXFLAGS= -Wall -Wextra -std=c++0x
 CXXSRCS1=src/client.cpp src/socket.cpp src/message.cpp
-CXXSRCS2=src/server.cpp src/socket.cpp src/message.cpp
+CXXSRCS2=src/server.cpp src/socket.cpp src/message.cpp src/termination.cpp
 CXXOBJS1=$(CXXSRCS1:.cpp=.o)
 CXXOBJS2=$(CXXSRCS2:.cpp=.o)
 LIBS=

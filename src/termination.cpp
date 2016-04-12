@@ -1,181 +1,179 @@
-/* socket.cpp
- *
- * Contains the wrapper functions for a TCP socket.
- */
+#include "../include/server.h"
 
-#include "../include/socket.h"
+using namespace std;
 
-Socket::Socket () : blockingEnabled (true)
+bool termination_protocol (int site_id, int failed_site, Socket site, bool b,
+        vector<int>& sites, set<int>& txLive,
+        map<int, transaction_info>& trans_table)
 {
-}
-
-Socket::Socket (int socketfd) : blockingEnabled (true)
-{
-    socketFD = socketfd;
-}
-
-int Socket::connect (string host, int port)
-{
-    /* Creating the socket. */
-    if ((socketFD = socket (AF_INET, SOCK_STREAM, 0)) < 0)
+    cout << "Site " << site_id << " entered termination protocol" << endl;
+    if (b)
     {
-        int errsv = errno;
-        std::cerr << "Cannot Create Socket, Error ";
-        std::cerr << errsv << "\n";
-        exit (1);
+        Message start_term (TERMINATION, 0, site_id, failed_site);
+        string msg_start_term = start_term.createMessage ();
+        for (int i = 0; i < sites.size (); ++i)
+        {
+            Socket tmp;
+            if (i != site_id && i != failed_site)
+            {
+                tmp.connect ("localhost", sites[i]);
+                tmp.send (msg_start_term);
+                cout << "Site " << site_id
+                    << " sent TERMINATION to Site " << i << endl;
+            }
+        }
     }
-    /* Determining server's IP address. */
-    stringstream s1;
-    s1 << port;
-    int status;
-    addrinfo hints;
-    addrinfo* servinfo;
-    memset (&hints, 0, sizeof (hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    if ((status = getaddrinfo (host.c_str (), s1.str ().c_str (), &hints,
-                               &servinfo)) != 0)
-        return -1;
 
-    /* Connecting to the server. */
-    return ::connect (socketFD, servinfo->ai_addr, servinfo->ai_addrlen);
-}
+    bool flag = false;
+    int numAcks = 0;
+	while (1)
+	{
+		Socket inc = site.accept ();
+		string str;
+        str = inc.recv ((size_t) 1024);
+        //cout << "Received str:- " << str << endl;
+		Message msg (str);
+        string tempStr, snd_msg;
+		switch (msg.message)
+		{
+			case TERMINATION:
+            {
+                cout << "Site " << site_id << " received TERMINATION from Site "
+                    << msg.site_id << endl;
+                failed_site = msg.failed_id;
+				Message tempMsg(ACK, msg.transaction_id, site_id);
+				tempStr = tempMsg.createMessage();
+                Socket temp;
+                temp.connect ("localhost", sites[msg.site_id]);
+                temp.send (tempStr);
+                cout << "Site " << site_id << " sent ACK to Site " <<
+                    msg.site_id << endl;
+				break;
+            }
+			case ACK:
+            {
+                cout << "]Site " << site_id << " got ACK from Site " <<
+                    msg.site_id << endl;
+                ++numAcks;
+				if (numAcks == (sites.size () - 2))
+				{
+                    flag = true;
+				}
+				break;
+            }
+            default:
+                break;
+		}
+        if (flag)
+            break;
+	}
 
-int Socket::send (string data)
-{
-    return ::send (socketFD, data.c_str (), data.length (), 0);
-}
-
-int Socket::send (char* data, size_t size)
-{
-    return ::send (socketFD, data, size, 0);
-}
-
-string Socket::recv (size_t len)
-{
-    char* recv_buf = new char[len + 1];
-    int recv_len = ::recv (socketFD, recv_buf, len, 0);
-    if (recv_len < 0)
-        return string ("");
-    recv_buf[recv_len] = '\0';
-    return string (recv_buf);
-}
-
-ssize_t Socket::recv (char* data, size_t len)
-{
-    return ::recv (socketFD, data, len, 0);
-}
-
-int Socket::bind (int port)
-{
-    /* Creating the socket. */
-    if ((socketFD = socket (AF_INET, SOCK_STREAM, 0)) < 0)
+    for (set<int>::iterator it = txLive.begin (); it != txLive.end (); )
     {
-        int errsv = errno;
-        std::cerr << "Cannot Create Socket, Error ";
-        std::cerr << errsv << "\n";
-        exit (1);
+        int t_chkid = *it;
+        if (trans_table[t_chkid].coordinator == site_id)
+        {
+            switch (trans_table[t_chkid].site_st)
+            {
+                case S_INIT:
+
+                case S_WAIT:
+                {
+                    cout << "[" << t_chkid << "]Site " << site_id <<
+                        " is aborting transaction" << endl;
+                    Message snd_msg_all (ABORT, t_chkid, site_id);
+                    string tmp_msg = snd_msg_all.createMessage ();
+                    for (int i = 0; i < sites.size (); ++i)
+                    {
+                        Socket tmp;
+                        if (i != site_id && i != failed_site)
+                        {
+                            tmp.connect ("localhost", sites[i]);
+                            tmp.send (tmp_msg);
+                            cout << "[" << t_chkid << "]Site " << site_id
+                                << " sent ABORT to Site " << i << endl;
+                        }
+                    }
+                    trans_table[t_chkid].site_st = S_ABORT;
+                    cout << "[" << t_chkid << "]Site " << site_id
+                        << " ABORTED" << "\n\n\n";
+                    it = txLive.erase (it);
+                    break;
+                }
+                case S_PRE_COMMIT:
+                {
+                    cout << "[" << t_chkid << "]Site " << site_id <<
+                        " is going to commit transaction" << endl;
+                    Message snd_msg_all (COMMIT, t_chkid, site_id);
+                    string tmp_msg = snd_msg_all.createMessage ();
+                    for (int i = 0; i < sites.size (); ++i)
+                    {
+                        Socket tmp;
+                        if (i != site_id && i != failed_site)
+                        {
+                            tmp.connect ("localhost", sites[i]);
+                            tmp.send (tmp_msg);
+                            cout << "[" << t_chkid << "]Site " << site_id
+                                << " sent COMMIT to Site " << i << endl;
+                        }
+                    }
+                    trans_table[t_chkid].site_st = S_COMMIT;
+                    cout << "[" << t_chkid << "]Site " << site_id
+                        << " COMMITTED" << "\n\n\n";
+                    it = txLive.erase (it);
+                    break;
+                }
+                default:
+                    ++it;
+                    break;
+            }
+        }
+        else
+            ++it;
     }
-    sockaddr_in myaddr;
-    memset ((char*)&myaddr, 0, sizeof(myaddr));
-    myaddr.sin_family = AF_INET;
-    myaddr.sin_addr.s_addr = htonl (INADDR_ANY);
-    myaddr.sin_port = htons (port);
-    return ::bind (socketFD, (sockaddr *)&myaddr, sizeof (myaddr));
-}
 
-int Socket::listen (int backlog)
-{
-    return ::listen (socketFD, backlog);
-}
+    flag = false;
+    while (1)
+    {
+        Socket inc = site.accept ();
+		string str;
+        str = inc.recv ((size_t) 1024);
+        //cout << "Received str:- " << str << endl;
+		Message msg (str);
+        string tempStr, snd_msg;
+        transaction_info new_t;
+		switch (msg.message)
+		{
+			case COMMIT:
+            {
+                cout << "[" << msg.transaction_id << "]Site " << site_id <<
+                    " received COMMIT from Site " << msg.site_id << endl;
+                trans_table[msg.transaction_id].site_st = S_COMMIT;
+                cout << "[" << msg.transaction_id << "]Site " << site_id
+                    << " COMMITTED" << "\n\n\n";
+                txLive.erase (msg.transaction_id);
+                if (txLive.empty ())
+                    flag = true;
+				break;
+            }
+			case ABORT:
+            {
+                cout << "[" << msg.transaction_id << "]Site " << site_id <<
+                    " received ABORT from Site " << msg.site_id << endl;
+                trans_table[msg.transaction_id].site_st = S_ABORT;
+                cout << "[" << msg.transaction_id << "]Site " << site_id
+                    << " ABORTED" << "\n\n\n";
+                txLive.erase (msg.transaction_id);
+                if (txLive.empty ())
+                    flag = true;
+				break;
+            }
+            default:
+                break;
+		}
+        if (flag)
+            break;
+    }
 
-Socket Socket::accept ()
-{
-    sockaddr_storage incoming;
-    socklen_t addr_size;
-    int tmp_fd = ::accept (socketFD, (sockaddr*)&incoming, &addr_size);
-    return (Socket (tmp_fd));
-}
-
-string Socket::getSourceAddr ()
-{
-    char src[INET_ADDRSTRLEN];
-    sockaddr_storage tmp;
-    socklen_t addr_size = sizeof (sockaddr);
-    getsockname (socketFD, (sockaddr*)&tmp, &addr_size);
-    sockaddr_in* src_addr = (sockaddr_in*)&tmp;
-    inet_ntop (AF_INET, &src_addr->sin_addr, src, sizeof (src));
-    return string (src);
-}
-
-int Socket::getSourcePort ()
-{
-    sockaddr_in src_addr;
-    socklen_t addr_size = sizeof (sockaddr);
-    getsockname (socketFD, (sockaddr*)&src_addr, &addr_size);
-    return ntohs (src_addr.sin_port);
-}
-
-string Socket::getDestAddr ()
-{
-    char dest[INET_ADDRSTRLEN];
-    sockaddr_storage tmp;
-    socklen_t addr_size = sizeof (sockaddr);
-    getpeername (socketFD, (sockaddr*)&tmp, &addr_size);
-    sockaddr_in* dest_addr = (sockaddr_in*)&tmp;
-    inet_ntop (AF_INET, &dest_addr->sin_addr, dest, sizeof (dest));
-    return string (dest);
-}
-
-int Socket::getDestPort ()
-{
-    sockaddr_in dest_addr;
-    socklen_t addr_size = sizeof (sockaddr);
-    getpeername (socketFD, (sockaddr*)&dest_addr, &addr_size);
-    return ntohs (dest_addr.sin_port);
-}
-
-int Socket::close ()
-{
-    return ::close (socketFD);
-}
-
-Socket::~Socket ()
-{
-}
-
-int Socket::enableBlocking ()
-{
-    if (socketFD < 0 && blockingEnabled)
-        return -1;
-
-    int flags;
-    if ((flags = fcntl (socketFD, F_GETFL, 0)) < 0)
-        return -1;
-
-    int rval = fcntl (socketFD, F_SETFL, flags | O_NONBLOCK);
-    if (rval < 0)
-        return rval;
-    else
-        blockingEnabled = false;
-
-    return rval;
-}
-
-int Socket::disableBlocking ()
-{
-    if (socketFD < 0 && (!blockingEnabled))
-        return -1;
-
-    int flags;
-    if ((flags = fcntl (socketFD, F_GETFL, 0)) < 0)
-        return -1;
-
-    int rval = fcntl (socketFD, F_SETFL, flags & (~O_NONBLOCK));
-    if (rval < 0)
-        return rval;
-    else
-        blockingEnabled = true;
-
-    return rval;
+	return false;
 }

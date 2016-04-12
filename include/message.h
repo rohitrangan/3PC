@@ -14,7 +14,7 @@
 #include <sstream>
 
 #define DELIM   ','
-#define NUM_MESSAGES    9
+#define NUM_MESSAGES    10
 
 enum message_id
 {
@@ -26,6 +26,7 @@ enum message_id
     COMMIT,
     ABORT,
     ACK,
+    TERMINATION,
     ERROR
 };
 
@@ -45,12 +46,14 @@ class Message
     message_id message;
     int transaction_id;
     int site_id;
+    int failed_id;
     std::string message_str;
 
     /* Use this constructor to create a new message. */
     Message (message_id, int, int);
     /* Use this constructor to parse a message. */
     Message (std::string);
+    Message (message_id, int, int, int);
     /* Returns a message which you can send. */
     std::string createMessage ();
 

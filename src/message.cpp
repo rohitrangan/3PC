@@ -8,7 +8,8 @@
 #include <iostream>
 
 std::string message_strings[NUM_MESSAGES] = {"TRANSACTION", "START_VOTE",
-    "VOTE_COMMIT", "VOTE_ABORT", "PRE_COMMIT", "COMMIT", "ABORT", "ACK", "ERR"
+    "VOTE_COMMIT", "VOTE_ABORT", "PRE_COMMIT", "COMMIT", "ABORT", "ACK",
+    "TERMINATION", "ERROR"
 };
 
 void split(const std::string& line, char delim, std::vector<std::string>& val) {
@@ -27,7 +28,13 @@ void split(const std::string& line, char delim, std::vector<std::string>& val) {
 }
 
 Message::Message (message_id m_id, int t_id, int s_id) : message (m_id),
-            transaction_id (t_id), site_id (s_id)
+            transaction_id (t_id), site_id (s_id), failed_id (0)
+{
+}
+
+Message::Message (message_id m_id, int t_id, int s_id, int f_id) :
+            message (m_id), transaction_id (t_id), site_id (s_id),
+            failed_id (f_id)
 {
 }
 
@@ -40,7 +47,7 @@ std::string Message::createMessage ()
 {
     std::stringstream s;
     s << message_strings[message] << DELIM << transaction_id;
-    s << DELIM << site_id;
+    s << DELIM << site_id << DELIM << failed_id;
     return s.str ();
 }
 
@@ -61,4 +68,5 @@ void Message::parseMessage ()
     this->message = messageIndex (m_parsed[0]);
     this->transaction_id = std::stoi (m_parsed[1]);
     this->site_id = std::stoi (m_parsed[2]);
+    this->failed_id = std::stoi (m_parsed[3]);
 }

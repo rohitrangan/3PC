@@ -1,30 +1,6 @@
-#include "../include/socket.h"
-#include "../include/message.h"
-// #include <iostream>
-// #include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <map>
-#include <set>
+#include "../include/server.h"
 
 using namespace std;
-enum state
-{
-    S_INIT,
-    S_READY,
-    S_WAIT,
-    S_PRE_COMMIT,
-    S_COMMIT,
-    S_ABORT    
-};
-
-struct transaction_info
-{
-    int numVotes;
-    state site_st;
-    int coordinator;
-};
 
 int main(int argc, char *argv[])
 {
