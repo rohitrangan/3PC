@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
 					trans_table[msg.transaction_id].site_st = S_COMMIT;
                     cout << "[" << msg.transaction_id << "]Site " << site_id
                         << " COMMITTED" << "\n\n\n";
+                    txLive.erase (msg.transaction_id);
 				}
 				break;
             }
