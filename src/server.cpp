@@ -1,37 +1,39 @@
-#include "../include/socket.h"
-#include "../include/message.h"
-// #include <iostream>
-// #include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <map>
-#include <set>
+#include "../include/server.h"
+
+#include <csignal>
 
 using namespace std;
-enum state
-{
-    S_INIT,
-    S_READY,
-    S_WAIT,
-    S_PRE_COMMIT,
-    S_COMMIT,
-    S_ABORT    
-};
 
-struct transaction_info
+Socket site;
+
+void server_shutdown (int s)
 {
-    int numVotes;
-    state site_st;
-    int coordinator;
-};
+    (void) s;
+    cout << "\n";
+    cout << "Initiating Server Shutdown...\n";
+    cout << "Closing All Connections... ";
+    site.close ();
+    cout << "\nAll Connections Closed. Exiting...\n\n";
+    exit (EXIT_SUCCESS);
+}
 
 int main(int argc, char *argv[])
 {
+    /* Signal handling to shutdown the ports and the server. */
+    struct sigaction sigint_handler;
+    sigint_handler.sa_handler = server_shutdown;
+    sigemptyset (&sigint_handler.sa_mask);
+    sigint_handler.sa_flags = 0;
+    if (sigaction(SIGINT, &sigint_handler, NULL) < 0)
+    {
+        cerr << "ERROR! Cannot Start Signal Handler\n\n";
+        return 1;
+    }
+
     (void) argc;
     int site_id = std::stoi (string (argv[1]));
     srand (time (NULL));
-	Socket site;
+	//Socket site;
 	std::vector<int> sites(3);
 	sites[0] = 6666;
 	sites[1] = 6667;
@@ -62,19 +64,29 @@ int main(int argc, char *argv[])
                     msg.transaction_id << endl;
 				Message tempMsg(START_VOTE,msg.transaction_id, site_id);
 				tempStr = tempMsg.createMessage();
+				txLive.insert(msg.transaction_id);
 				for(int i = 0; i < sites.size();i++)
 				{
                     Socket temp;
                     if (i != site_id)
                     {
-					    temp.connect("localhost", sites[i]);
+					    if (temp.connect("localhost", sites[i]) < 0)
+                        {
+                            cout << "Site " << site_id << " timed out in State "
+                                << "INITIAL" << endl;
+                            termination_protocol (site_id, i, site, true, sites,
+                                    txLive, trans_table);
+                            cout << "Site " << site_id << " ended TERMINATION"
+                                << endl;
+                            sites.erase (sites.begin () + i);
+                            break;
+                        }
 					    temp.send(tempStr);
                         cout << "[" << msg.transaction_id << "]Site " << site_id
                             << " sent START_VOTE to Site " << i << endl;
                     }
 				}
                 trans_table[msg.transaction_id].site_st = S_WAIT;
-				txLive.insert(msg.transaction_id);
 				break;
             }
 			case VOTE_COMMIT:
@@ -93,8 +105,18 @@ int main(int argc, char *argv[])
                         Socket temp;
                         if (i != site_id)
                         {
-						    temp.connect("localhost", sites[i]);
-						    temp.send(tempStr);
+						    if (temp.connect("localhost", sites[i]) < 0)
+                            {
+                                cout << "Site " << site_id << " timed out in "
+                                    << "State WAIT" << endl;
+                                termination_protocol (site_id, i, site, true,
+                                        sites, txLive, trans_table);
+                                cout << "Site " << site_id << " ended "
+                                    "TERMINATION" << endl;
+                                sites.erase (sites.begin () + i);
+                                break;
+                            }
+                            temp.send(tempStr);
                             cout << "[" << msg.transaction_id << "]Site " <<
                                 site_id << " sent PRE_COMMIT to Site " << i <<
                                 endl;
@@ -116,7 +138,17 @@ int main(int argc, char *argv[])
                     Socket temp;
                     if (i != site_id)
                     {
-					    temp.connect("localhost",sites[i]);
+					    if (temp.connect("localhost", sites[i]) < 0)
+                        {
+                            cout << "Site " << site_id << " timed out in State "
+                                << "WAIT" << endl;
+                            termination_protocol (site_id, i, site, true, sites,
+                                    txLive, trans_table);
+                            cout << "Site " << site_id << " ended TERMINATION"
+                                << endl;
+                            sites.erase (sites.begin () + i);
+                            break;
+                        }
 					    temp.send(tempStr);
                         cout << "[" << msg.transaction_id << "]Site " <<
                             site_id << " sent ABORT to Site " << i <<
@@ -143,7 +175,17 @@ int main(int argc, char *argv[])
                         Socket temp;
                         if (i != site_id)
                         {
-                            temp.connect("localhost",sites[i]);
+                            if (temp.connect("localhost", sites[i]) < 0)
+                            {
+                                cout << "Site " << site_id << " timed out in "
+                                    << "State PRE_COMMIT" << endl;
+                                termination_protocol (site_id, i, site, true,
+                                        sites, txLive, trans_table);
+                                cout << "Site " << site_id << " ended "
+                                    "TERMINATION" << endl;
+                                sites.erase (sites.begin () + i);
+                                break;
+                            }
                             temp.send(tempStr);
                             cout << "[" << msg.transaction_id << "]Site " <<
                             site_id << " sent COMMIT to Site " << i <<
@@ -153,6 +195,7 @@ int main(int argc, char *argv[])
 					trans_table[msg.transaction_id].site_st = S_COMMIT;
                     cout << "[" << msg.transaction_id << "]Site " << site_id
                         << " COMMITTED" << "\n\n\n";
+                    txLive.erase (msg.transaction_id);
 				}
 				break;
             }
@@ -172,7 +215,17 @@ int main(int argc, char *argv[])
                     Message vote_abort (VOTE_ABORT, msg.transaction_id,
                                 site_id);
                     snd_msg = vote_abort.createMessage ();
-                    tmp.connect ("localhost", sites[msg.site_id]);
+                    if (tmp.connect("localhost", sites[msg.site_id]) < 0)
+                    {
+                        cout << "Site " << site_id << " timed out in "
+                            << "State INITIAL" << endl;
+                        termination_protocol (site_id, msg.site_id, site, true,
+                                sites, txLive, trans_table);
+                        cout << "Site " << site_id << " ended "
+                            "TERMINATION" << endl;
+                        sites.erase (sites.begin () + msg.site_id);
+                        break;
+                    }
                     tmp.send (snd_msg);
                     trans_table[msg.transaction_id].site_st = S_ABORT;
                     cout << "[" << msg.transaction_id << "]Site " << site_id
@@ -186,7 +239,17 @@ int main(int argc, char *argv[])
                     Message vote_commit (VOTE_COMMIT, msg.transaction_id,
                                 site_id);
                     snd_msg = vote_commit.createMessage ();
-                    tmp.connect ("localhost", sites[msg.site_id]);
+                    if (tmp.connect("localhost", sites[msg.site_id]) < 0)
+                    {
+                        cout << "Site " << site_id << " timed out in "
+                            << "State INITIAL" << endl;
+                        termination_protocol (site_id, msg.site_id, site, true,
+                                sites, txLive, trans_table);
+                        cout << "Site " << site_id << " ended "
+                            "TERMINATION" << endl;
+                        sites.erase (sites.begin () + msg.site_id);
+                        break;
+                    }
                     tmp.send (snd_msg);
                     cout << "[" << msg.transaction_id << "]Site " << site_id
                         << " sent VOTE_COMMIT to Site " << msg.site_id << endl;
@@ -201,7 +264,17 @@ int main(int argc, char *argv[])
                     << " got PRE_COMMIT from Site " << msg.site_id << endl;
                 Message ack (ACK, msg.transaction_id, site_id);
                 snd_msg = ack.createMessage ();
-                tmp.connect ("localhost", sites[msg.site_id]);
+                if (tmp.connect("localhost", sites[msg.site_id]) < 0)
+                {
+                    cout << "Site " << site_id << " timed out in "
+                        << "State READY" << endl;
+                    termination_protocol (site_id, msg.site_id, site, true,
+                            sites, txLive, trans_table);
+                    cout << "Site " << site_id << " ended "
+                        "TERMINATION" << endl;
+                    sites.erase (sites.begin () + msg.site_id);
+                    break;
+                }
                 tmp.send (snd_msg);
                 cout << "[" << msg.transaction_id << "]Site " << site_id
                     << " sent ACK to Site " << msg.site_id << endl;
@@ -232,6 +305,24 @@ int main(int argc, char *argv[])
                         << " ABORTED" << "\n\n\n";
                     txLive.erase (msg.transaction_id);
                 }
+                break;
+            }
+            case TERMINATION:
+            {
+                cout << "Site " << site_id << " got TERMINATION" << endl;
+                Socket tmp;
+                Message ack (ACK, msg.transaction_id, site_id);
+                snd_msg = ack.createMessage ();
+                if (tmp.connect ("localhost", sites[msg.site_id]) < 0)
+                {
+                    cout << "COULD NOT CONNECT!!!!\n";
+                    cout << "Error number = " << errno << endl;
+                }
+                tmp.send (snd_msg);
+                termination_protocol (site_id, msg.failed_id, site, false,
+                        sites, txLive, trans_table);
+                cout << "Site " << site_id << " finished TERMINATION" << endl;
+                sites.erase (sites.begin () + msg.failed_id);
                 break;
             }
             default:
