@@ -1,13 +1,39 @@
 #include "../include/server.h"
 
+#include <csignal>
+
 using namespace std;
+
+Socket site;
+
+void server_shutdown (int s)
+{
+    (void) s;
+    cout << "\n";
+    cout << "Initiating Server Shutdown...\n";
+    cout << "Closing All Connections... ";
+    site.close ();
+    cout << "\nAll Connections Closed. Exiting...\n\n";
+    exit (EXIT_SUCCESS);
+}
 
 int main(int argc, char *argv[])
 {
+    /* Signal handling to shutdown the ports and the server. */
+    struct sigaction sigint_handler;
+    sigint_handler.sa_handler = server_shutdown;
+    sigemptyset (&sigint_handler.sa_mask);
+    sigint_handler.sa_flags = 0;
+    if (sigaction(SIGINT, &sigint_handler, NULL) < 0)
+    {
+        cerr << "ERROR! Cannot Start Signal Handler\n\n";
+        return 1;
+    }
+
     (void) argc;
     int site_id = std::stoi (string (argv[1]));
     srand (time (NULL));
-	Socket site;
+	//Socket site;
 	std::vector<int> sites(3);
 	sites[0] = 6666;
 	sites[1] = 6667;
