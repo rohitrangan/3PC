@@ -280,9 +280,10 @@ int main(int argc, char *argv[])
                 Socket tmp;
                 Message ack (ACK, msg.transaction_id, site_id);
                 snd_msg = ack.createMessage ();
-                if (tmp.connect ("localhost", msg.site_id) < 0)
+                if (tmp.connect ("localhost", sites[msg.site_id]) < 0)
                 {
                     cout << "COULD NOT CONNECT!!!!\n";
+                    cout << "Error number = " << errno << endl;
                 }
                 tmp.send (snd_msg);
                 termination_protocol (site_id, msg.failed_id, site, false,

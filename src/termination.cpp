@@ -52,7 +52,7 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                 }
                 case ACK:
                 {
-                    cout << "]Site " << site_id << " got ACK from Site " <<
+                    cout << "Site " << site_id << " got ACK from Site " <<
                         msg.site_id << endl;
                     ++numAcks;
                     if (numAcks == (sites.size () - 2))
@@ -79,6 +79,7 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                 ((trans_table[t_chkid].coordinator == failed_site) &&
                  (new_coordinator == site_id)))
         {
+            cout << "handling transaction: " << t_chkid << endl;
             switch (trans_table[t_chkid].site_st)
             {
                 case S_INIT:
@@ -155,6 +156,7 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                     break;
                 }
                 default:
+                    cout << "State is:- " << trans_table[t_chkid].site_st << endl;
                     ++it;
                     break;
             }
