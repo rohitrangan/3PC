@@ -142,6 +142,7 @@ int Socket::close ()
 
 Socket::~Socket ()
 {
+    this->close ();
 }
 
 int Socket::enableBlocking ()

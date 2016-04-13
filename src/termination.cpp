@@ -89,7 +89,7 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                 case S_WAIT:
                 {
                     cout << "[" << t_chkid << "]Site " << site_id <<
-                        " is aborting transaction" << endl;
+                        " is aborting transaction in TERMINATION" << endl;
                     Message snd_msg_all (ABORT, t_chkid, site_id);
                     string tmp_msg = snd_msg_all.createMessage ();
                     for (int i = 0; i < sites.size (); ++i)
@@ -105,14 +105,15 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                     }
                     trans_table[t_chkid].site_st = S_ABORT;
                     cout << "[" << t_chkid << "]Site " << site_id
-                        << " ABORTED" << "\n\n\n";
+                        << " ABORTED in TERMINATION" << "\n\n\n";
                     it = txLive.erase (it);
                     break;
                 }
                 case S_PRE_COMMIT:
                 {
                     cout << "[" << t_chkid << "]Site " << site_id <<
-                        " is going to commit transaction" << endl;
+                        " is going to commit transaction in TERMINATION"
+                        << endl;
                     Message snd_msg_all (COMMIT, t_chkid, site_id);
                     string tmp_msg = snd_msg_all.createMessage ();
                     for (int i = 0; i < sites.size (); ++i)
@@ -123,19 +124,20 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                             tmp.connect ("localhost", sites[i]);
                             tmp.send (tmp_msg);
                             cout << "[" << t_chkid << "]Site " << site_id
-                                << " sent COMMIT to Site " << i << endl;
+                                << " sent COMMIT to Site " << i <<
+                                " in TERMINATION" << endl;
                         }
                     }
                     trans_table[t_chkid].site_st = S_COMMIT;
                     cout << "[" << t_chkid << "]Site " << site_id
-                        << " COMMITTED" << "\n\n\n";
+                        << " COMMITTED in TERMINATION" << "\n\n\n";
                     it = txLive.erase (it);
                     break;
                 }
                 case S_ABORT:
                 {
                     cout << "[" << t_chkid << "]Site " << site_id <<
-                        " is aborting transaction" << endl;
+                        " is aborting transaction in TERMINATION" << endl;
                     Message snd_msg_all (ABORT, t_chkid, site_id);
                     string tmp_msg = snd_msg_all.createMessage ();
                     for (int i = 0; i < sites.size (); ++i)
@@ -146,12 +148,13 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                             tmp.connect ("localhost", sites[i]);
                             tmp.send (tmp_msg);
                             cout << "[" << t_chkid << "]Site " << site_id
-                                << " sent ABORT to Site " << i << endl;
+                                << " sent ABORT to Site " << i << 
+                                " in TERMINATION" << endl;
                         }
                     }
                     trans_table[t_chkid].site_st = S_ABORT;
                     cout << "[" << t_chkid << "]Site " << site_id
-                        << " ABORTED" << "\n\n\n";
+                        << " ABORTED in TERMINATION" << "\n\n\n";
                     it = txLive.erase (it);
                     break;
                 }
@@ -164,6 +167,9 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
         else
             ++it;
     }
+
+    if (txLive.empty ())
+        return false;
 
     flag = false;
     while (1)
@@ -179,10 +185,11 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
 			case COMMIT:
             {
                 cout << "[" << msg.transaction_id << "]Site " << site_id <<
-                    " received COMMIT from Site " << msg.site_id << endl;
+                    " received COMMIT from Site " << msg.site_id <<
+                    " in TERMINATION" << endl;
                 trans_table[msg.transaction_id].site_st = S_COMMIT;
                 cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " COMMITTED" << "\n\n\n";
+                    << " COMMITTED in TERMINATION" << "\n\n\n";
                 txLive.erase (msg.transaction_id);
                 if (txLive.empty ())
                     flag = true;
@@ -191,10 +198,11 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
 			case ABORT:
             {
                 cout << "[" << msg.transaction_id << "]Site " << site_id <<
-                    " received ABORT from Site " << msg.site_id << endl;
+                    " received ABORT from Site " << msg.site_id <<
+                    " in TERMINATION" << endl;
                 trans_table[msg.transaction_id].site_st = S_ABORT;
                 cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " ABORTED" << "\n\n\n";
+                    << " ABORTED in TERMINATION" << "\n\n\n";
                 txLive.erase (msg.transaction_id);
                 if (txLive.empty ())
                     flag = true;

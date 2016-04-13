@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
                     msg.transaction_id << endl;
 				Message tempMsg(START_VOTE,msg.transaction_id, site_id);
 				tempStr = tempMsg.createMessage();
+				txLive.insert(msg.transaction_id);
 				for(int i = 0; i < sites.size();i++)
 				{
                     Socket temp;
@@ -86,7 +87,6 @@ int main(int argc, char *argv[])
                     }
 				}
                 trans_table[msg.transaction_id].site_st = S_WAIT;
-				txLive.insert(msg.transaction_id);
 				break;
             }
 			case VOTE_COMMIT:
