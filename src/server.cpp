@@ -210,22 +210,28 @@ int main(int argc, char *argv[])
             }
             case COMMIT:
             {
-                cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " got COMMIT from Site " << msg.site_id << endl;
-                trans_table[msg.transaction_id].site_st = S_COMMIT;
-                cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " COMMITTED" << "\n\n\n";
-                txLive.erase (msg.transaction_id);
+                if(txLive.find(msg.transaction_id) != txLive.end())
+                {
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                        << " got COMMIT from Site " << msg.site_id << endl;
+                    trans_table[msg.transaction_id].site_st = S_COMMIT;
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                        << " COMMITTED" << "\n\n\n";
+                    txLive.erase (msg.transaction_id);
+                }
                 break;
             }
             case ABORT:
             {
-                cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " got ABORT from Site " << msg.site_id << endl;
-                trans_table[msg.transaction_id].site_st = S_ABORT;
-                cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " ABORTED" << "\n\n\n";
-                txLive.erase (msg.transaction_id);
+                if(txLive.find(msg.transaction_id) != txLive.end())
+                {
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                        << " got ABORT from Site " << msg.site_id << endl;
+                    trans_table[msg.transaction_id].site_st = S_ABORT;
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                        << " ABORTED" << "\n\n\n";
+                    txLive.erase (msg.transaction_id);
+                }
                 break;
             }
             default:

@@ -6,7 +6,7 @@
 #include "../include/message.h"
 
 #include <iostream>
-
+#include <cstring>
 std::string message_strings[NUM_MESSAGES] = {"TRANSACTION", "START_VOTE",
     "VOTE_COMMIT", "VOTE_ABORT", "PRE_COMMIT", "COMMIT", "ABORT", "ACK", "ERR"
 };
