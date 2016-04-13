@@ -11,6 +11,9 @@
 #include <map>
 #include <set>
 
+#define ABORT_DENOM 20
+#define ABORT_NUM   3
+
 using namespace std;
 
 enum state

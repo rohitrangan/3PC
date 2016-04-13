@@ -1,25 +1,38 @@
 #include "../include/socket.h"
 #include "../include/message.h"
 
+#include <ctime>
+#include <string>
 #include <thread>
 #include <chrono> 
-#include <cstring>
 #include <vector>
-#include <ctime>
+#include <cstring>
 #include <cstdlib>
 
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc != 5)
+    {
+        cout << "Not enough parameters.\n";
+        return 1;
+    }
+
+    int transactionId = stoi (string (argv[1]));
+    int add_v = stoi (string (argv[2]));
+    int sleep_time = stoi (string (argv[3]));
+    double send_till = stod (string (argv[4]));
     int site_id = 1231;
+    double time_elapsed = 0.0;
     std::vector<int> sites(3);
     sites[0] = 6666;
     sites[1] = 6667;
     sites[2] = 6668;
-    int transactionId =1;
-    while(transactionId!=10)
+
+    while (time_elapsed < send_till)
     {
+        auto t1 = chrono::steady_clock::now ();
         Socket transaction_gen;
         Message msg (TRANSACTION,transactionId, site_id);
         string str = msg.createMessage();
@@ -29,9 +42,13 @@ int main()
         cout << ", message: " << str << endl;
         transaction_gen.connect("localhost", sites[cur_site]);
         transaction_gen.send(str);
-        ++transactionId;
+        transactionId += add_v;
         transaction_gen.close ();
-        std::this_thread::sleep_for (std::chrono::seconds(1));
+        this_thread::sleep_for (chrono::milliseconds(sleep_time));
+        auto t2 = chrono::steady_clock::now ();
+        chrono::duration<double> time_span = chrono::\
+                        duration_cast<chrono::duration<double>>(t2 - t1);
+        time_elapsed += time_span.count ();
     }
     return 0;
 }

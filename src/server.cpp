@@ -30,7 +30,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    (void) argc;
+    if (argc != 2)
+    {
+        cout << "Not enough parameters.\n";
+        return 1;
+    }
+
     int site_id = std::stoi (string (argv[1]));
     srand (time (NULL));
 	//Socket site;
@@ -129,36 +134,39 @@ int main(int argc, char *argv[])
             }
 			case VOTE_ABORT:
             {
-				Message tempMsg(ABORT,msg.transaction_id, site_id);
-				tempStr = tempMsg.createMessage();
-                cout << "[" << msg.transaction_id << "]Site " << site_id
-                    << " got VOTE_ABORT from Site " << msg.site_id << endl;
-				for(int i = 0; i < sites.size();i++)
-				{
-                    Socket temp;
-                    if (i != site_id)
+                if(txLive.find(msg.transaction_id) != txLive.end())
+                {
+                    Message tempMsg(ABORT,msg.transaction_id, site_id);
+                    tempStr = tempMsg.createMessage();
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                        << " got VOTE_ABORT from Site " << msg.site_id << endl;
+                    for(int i = 0; i < sites.size();i++)
                     {
-					    if (temp.connect("localhost", sites[i]) < 0)
+                        Socket temp;
+                        if (i != site_id)
                         {
-                            cout << "Site " << site_id << " timed out in State "
-                                << "WAIT" << endl;
-                            termination_protocol (site_id, i, site, true, sites,
-                                    txLive, trans_table);
-                            cout << "Site " << site_id << " ended TERMINATION"
-                                << endl;
-                            sites.erase (sites.begin () + i);
-                            break;
+                            if (temp.connect("localhost", sites[i]) < 0)
+                            {
+                                cout << "Site " << site_id << " timed out in "
+                                    << "State WAIT" << endl;
+                                termination_protocol (site_id, i, site, true,
+                                        sites, txLive, trans_table);
+                                cout << "Site " << site_id << " ended "
+                                    << "TERMINATION" << endl;
+                                sites.erase (sites.begin () + i);
+                                break;
+                            }
+                            temp.send(tempStr);
+                            cout << "[" << msg.transaction_id << "]Site " <<
+                                site_id << " sent ABORT to Site " << i <<
+                                endl;
                         }
-					    temp.send(tempStr);
-                        cout << "[" << msg.transaction_id << "]Site " <<
-                            site_id << " sent ABORT to Site " << i <<
-                            endl;
                     }
-				}
-				txLive.erase(msg.transaction_id);
-				trans_table[msg.transaction_id].site_st = S_ABORT;
-                cout << "[" << msg.transaction_id << "]Site " << site_id
-                        << " ABORTED" << "\n\n\n";
+                    txLive.erase(msg.transaction_id);
+                    trans_table[msg.transaction_id].site_st = S_ABORT;
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                            << " ABORTED" << "\n\n\n";
+                }
 				break;
             }
 			case ACK:
@@ -209,8 +217,8 @@ int main(int argc, char *argv[])
                 new_t.coordinator = msg.site_id;
 				trans_table[msg.transaction_id] = new_t;
                 Socket tmp;
-                int will_abort = rand () % 10;
-                if (will_abort < 3)
+                int will_abort = rand () % ABORT_DENOM;
+                if (will_abort < ABORT_NUM)
                 {
                     Message vote_abort (VOTE_ABORT, msg.transaction_id,
                                 site_id);
