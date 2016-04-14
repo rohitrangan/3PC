@@ -3,7 +3,7 @@
 using namespace std;
 
 bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
-        vector<int>& sites, set<int>& txLive,
+        map<int, int>& sites, set<int>& txLive,
         map<int, transaction_info>& trans_table)
 {
     int new_coordinator = (failed_site != 0) ? 0 : 1;

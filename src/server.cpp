@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     int site_id = std::stoi (string (argv[1]));
     srand (time (NULL));
 	//Socket site;
-	std::vector<int> sites(3);
+	std::map<int, int> sites;
 	sites[0] = 6666;
 	sites[1] = 6667;
 	sites[2] = 6668;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
                                     txLive, trans_table);
                             cout << "Site " << site_id << " ended TERMINATION"
                                 << endl;
-                            sites.erase (sites.begin () + i);
+                            sites.erase (i);
                             break;
                         }
 					    temp.send(tempStr);
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
                                         sites, txLive, trans_table);
                                 cout << "Site " << site_id << " ended "
                                     "TERMINATION" << endl;
-                                sites.erase (sites.begin () + i);
+                                sites.erase (i);
                                 break;
                             }
                             temp.send(tempStr);
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
                                         sites, txLive, trans_table);
                                 cout << "Site " << site_id << " ended "
                                     << "TERMINATION" << endl;
-                                sites.erase (sites.begin () + i);
+                                sites.erase (i);
                                 break;
                             }
                             temp.send(tempStr);
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
                                         sites, txLive, trans_table);
                                 cout << "Site " << site_id << " ended "
                                     "TERMINATION" << endl;
-                                sites.erase (sites.begin () + i);
+                                sites.erase (i);
                                 break;
                             }
                             temp.send(tempStr);
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
                                 sites, txLive, trans_table);
                         cout << "Site " << site_id << " ended "
                             "TERMINATION" << endl;
-                        sites.erase (sites.begin () + msg.site_id);
+                        sites.erase (msg.site_id);
                         break;
                     }
                     tmp.send (snd_msg);
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
                                 sites, txLive, trans_table);
                         cout << "Site " << site_id << " ended "
                             "TERMINATION" << endl;
-                        sites.erase (sites.begin () + msg.site_id);
+                        sites.erase (msg.site_id);
                         break;
                     }
                     tmp.send (snd_msg);
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
                             sites, txLive, trans_table);
                     cout << "Site " << site_id << " ended "
                         "TERMINATION" << endl;
-                    sites.erase (sites.begin () + msg.site_id);
+                    sites.erase (msg.site_id);
                     break;
                 }
                 tmp.send (snd_msg);
@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
                 termination_protocol (site_id, msg.failed_id, site, false,
                         sites, txLive, trans_table);
                 cout << "Site " << site_id << " finished TERMINATION" << endl;
-                sites.erase (sites.begin () + msg.failed_id);
+                sites.erase (msg.failed_id);
                 break;
             }
             default:

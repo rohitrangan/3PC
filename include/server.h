@@ -33,7 +33,7 @@ struct transaction_info
     int coordinator;
 };
 
-bool termination_protocol (int, int, Socket&, bool, vector<int>&, set<int>&,
+bool termination_protocol (int, int, Socket&, bool, map<int, int>&, set<int>&,
         map<int, transaction_info>&);
 
 #endif  /* PC_SERVER_H_ */

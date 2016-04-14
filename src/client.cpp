@@ -1,6 +1,7 @@
 #include "../include/socket.h"
 #include "../include/message.h"
 
+#include <map>
 #include <ctime>
 #include <string>
 #include <thread>
@@ -25,7 +26,8 @@ int main(int argc, char* argv[])
     double send_till = stod (string (argv[4]));
     int site_id = 1231;
     double time_elapsed = 0.0;
-    std::vector<int> sites(3);
+    int mod_sites = 3;
+    map<int, int> sites;
     sites[0] = 6666;
     sites[1] = 6667;
     sites[2] = 6668;
@@ -37,10 +39,15 @@ int main(int argc, char* argv[])
         Message msg (TRANSACTION,transactionId, site_id);
         string str = msg.createMessage();
         srand (time(NULL));
-        int cur_site = rand() % 3;
+        int cur_site = rand() % mod_sites;
         cout << "Transaction ID: " << transactionId << ", Site ID :" <<cur_site;
         cout << ", message: " << str << endl;
-        transaction_gen.connect("localhost", sites[cur_site]);
+        if (transaction_gen.connect("localhost", sites[cur_site]) < 0)
+        {
+            sites.erase (cur_site);
+            --mod_sites;
+            continue;
+        }
         transaction_gen.send(str);
         transactionId += add_v;
         transaction_gen.close ();
