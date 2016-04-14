@@ -79,7 +79,6 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
                 ((trans_table[t_chkid].coordinator == failed_site) &&
                  (new_coordinator == site_id)))
         {
-            cout << "handling transaction: " << t_chkid << endl;
             switch (trans_table[t_chkid].site_st)
             {
                 case S_INIT:
@@ -177,7 +176,6 @@ bool termination_protocol (int site_id, int failed_site, Socket& site, bool b,
         Socket inc = site.accept ();
 		string str;
         str = inc.recv ((size_t) 1024);
-        //cout << "Received str:- " << str << endl;
 		Message msg (str);
         string tempStr, snd_msg;
 		switch (msg.message)
