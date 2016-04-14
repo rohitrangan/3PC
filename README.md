@@ -81,3 +81,8 @@ NOTE
 2. The client gives a floating point exception in some rare cases. We will try
    to solve this error before the presentation (happens because of the timing
    code).
+
+Contribution
+
+Shikhar Singh - 50%
+Rohit Rangan - 50%
