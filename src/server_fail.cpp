@@ -94,6 +94,12 @@ int main(int argc, char *argv[])
                     }
 				}
                 trans_table[msg.transaction_id].site_st = S_WAIT;
+                if ((fail_loc == 2) && (msg.transaction_id > tid_fail))
+                {
+                    cout << "[" << msg.transaction_id << "]Site " << site_id
+                        << " is FAILING" << endl;
+                    exit (1);
+                }
 				break;
             }
 			case VOTE_COMMIT:
