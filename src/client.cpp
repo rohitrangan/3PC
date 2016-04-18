@@ -32,13 +32,18 @@ int main(int argc, char* argv[])
     sites[1] = 6667;
     sites[2] = 6668;
 
-    while (time_elapsed < send_till)
+    while ((int)time_elapsed < (int)send_till)
     {
         auto t1 = chrono::steady_clock::now ();
         Socket transaction_gen;
         Message msg (TRANSACTION,transactionId, site_id);
         string str = msg.createMessage();
         srand (time(NULL));
+        if (mod_sites == 0)
+        {
+            cout << "Cannot connect to any server. Exiting.." << endl;
+            exit (0);
+        }
         int cur_site = rand() % mod_sites;
         cout << "Transaction ID: " << transactionId << ", Site ID :" <<cur_site;
         cout << ", message: " << str << endl;
