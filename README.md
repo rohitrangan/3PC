@@ -19,15 +19,21 @@ COMPILING THE CODE
 1. At the root directory (the directory containing this README), execute the
    "make" command.
 
-2. There are two executables - server and client.
+2. There are three executables - server, server\_fail, and client.
 
 -------------------------------------------------------------------------------
 EXECUTING THE CODE
 -------------------------------------------------------------------------------
 
 1. The code requires 3 instances of the server program running in separate
-   console instances. The server program takes an integer as an argument, which
-   represents its ID (ID's are 0, 1, 2).
+   console instances or 2 instances of the server program and 1 instance of the
+   server\_fail program. The server program takes an integer as an argument,
+   which represents its ID (ID's are 0, 1, 2). The server\_fail program takes
+   an integer (its ID, same as the server program), an integer representing the
+   transaction ID it should fail at, and an integer which tells us when it
+   should fail. This integer is 0 if it should fail after receiving the
+   START\_VOTE message, or 1 if it should fail after receiving the PRE\_COMMIT
+   message.
    Open 3 separate consoles/terminals and execute the commands "./server 0",
    "./server 1", "./server 2" separately. There is no check as of now for
    conflicting server ID's. In order to shut the server, enter "Ctrl+C" in the

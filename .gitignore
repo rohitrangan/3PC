@@ -76,4 +76,5 @@ Temporary Items
 .depend
 client
 server
+server_fail
 *.txt
